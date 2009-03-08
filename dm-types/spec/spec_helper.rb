@@ -1,4 +1,5 @@
 require 'pathname'
+require 'uri'
 require 'rubygems'
 
 gem 'rspec', '~>1.1.11'

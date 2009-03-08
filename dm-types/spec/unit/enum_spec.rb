@@ -93,4 +93,13 @@ describe DataMapper::Types::Enum do
       @int_enum.typecast( nil, :property ).should == nil
     end
   end
+
+  describe "subclassing" do
+    it "should propagate the values down into the child class" do
+      class ChildClass < Enum[:uno, :dos, :tres]
+      end
+
+      ChildClass.flag_map.should == {1 => :uno, 2 => :dos, 3 => :tres}
+    end
+  end
 end

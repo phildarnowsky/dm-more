@@ -3,11 +3,26 @@ require Pathname(__FILE__).dirname.parent.expand_path + 'spec_helper'
 
 describe DataMapper::Types::Enum do
   before(:all) do
+    # This silly hack is here because, somewhat surprisingly, before(all)
+    # blocks get evaluated again before a nested context is run.  Since
+    # Enum.[] returns a different anonymous subclass each time, the second
+    # time that the definition of Resolution is encountered, the definition
+    # has a different superclass even though the values are the same, which
+    # causes a TypeError.
+
+    begin
+      Resolution
+    rescue NameError
+      class ::Resolution < Enum[:new, :fixed, :duplicate, :worksforme]
+      end
+    end
+
     class ::Bug
       include DataMapper::Resource
 
       property :id, Integer, :serial => true
       property :status, Enum[:crit, :warn, :info, :unknown]
+      property :resolution, Resolution
     end
     Bug.auto_migrate!
   end
@@ -23,6 +38,11 @@ describe DataMapper::Types::Enum do
     bugs[1].status.should == :warn
   end
 
+  it "should work with subclassed properties" do
+    duplicate = Bug.create(:resolution => :duplicate)
+    duplicate.resolution.should == :duplicate
+  end
+
   it 'should immediately typecast supplied values' do
     Bug.new(:status => :crit).status.should == :crit
   end
@@ -30,12 +50,15 @@ describe DataMapper::Types::Enum do
   describe "with finders" do
     before(:all) do
       @info = Bug.create(:status => :info)
+      @new = Bug.create(:resolution => :new)
     end
     it "should work with equality opeand" do
       Bug.all(:status => [:info, :unknown]).entries.should == [@info]
+      Bug.all(:resolution => [:new, :worksforme]).entries.should == [@new]
     end
     it "should work with inequality operand" do
       Bug.all(:status.not => [:crit, :warn]).entries.should == [@info]
+      Bug.all(:resolution.not => [:duplicate, :fixed]).entries.should == [@new]
     end
   end
 

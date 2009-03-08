@@ -3,6 +3,7 @@ module DataMapper
     class Enum < DataMapper::Type(Integer)
       def self.inherited(target)
         target.instance_variable_set("@primitive", self.primitive)
+        target.flag_map = flag_map.dup if flag_map
       end
 
       def self.flag_map
